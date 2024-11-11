@@ -1122,6 +1122,15 @@ function normalizeAndValidateEnvironment(
 		undefined
 	);
 
+	const workers_dev_previews = inheritable(
+		diagnostics,
+		topLevelEnv,
+		rawEnv,
+		"workers_dev_previews",
+		isBoolean,
+		true
+	);
+
 	const { deprecatedUpload, ...build } = normalizeAndValidateBuild(
 		diagnostics,
 		rawEnv,
@@ -1256,6 +1265,7 @@ function normalizeAndValidateEnvironment(
 		placement: normalizeAndValidatePlacement(diagnostics, topLevelEnv, rawEnv),
 		build,
 		workers_dev,
+		workers_dev_previews,
 		// Not inherited fields
 		vars: notInheritable(
 			diagnostics,

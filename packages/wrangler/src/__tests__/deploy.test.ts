@@ -5073,7 +5073,7 @@ addEventListener('fetch', event => {});`
 		it("should sync the workers.dev domain if it has been enabled before but previews should be enabled", async () => {
 			writeWranglerToml({
 				workers_dev: true,
-				workers_dev_previews: false,
+				preview_urls: false,
 			});
 			writeWorkerSource();
 			mockUploadWorkerRequest();
@@ -5161,7 +5161,7 @@ addEventListener('fetch', event => {});`
 		it("should sync the workers.dev domain if it is not available but previews should be disabled", async () => {
 			writeWranglerToml({
 				workers_dev: false,
-				workers_dev_previews: false,
+				preview_urls: false,
 			});
 			writeWorkerSource();
 			mockUploadWorkerRequest();

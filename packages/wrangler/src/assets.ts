@@ -55,6 +55,7 @@ export const syncAssets = async (
 
 	// 1. generate asset manifest
 	logger.info("🌀 Building list of assets...");
+	console.time("ASSETS_UPLOAD");
 	const manifest = await buildAssetManifest(assetDirectory);
 
 	// 2. fetch buckets w/ hashes
@@ -77,6 +78,7 @@ export const syncAssets = async (
 			);
 		}
 		logger.info(`No files to upload. Proceeding with deployment...`);
+		console.timeEnd("ASSETS_UPLOAD")
 		return initializeAssetsResponse.jwt;
 	}
 
@@ -214,6 +216,7 @@ export const syncAssets = async (
 	logger.log(
 		`✨ Success! Uploaded ${numberFilesToUpload} file${numberFilesToUpload > 1 ? "s" : ""} ${skippedMessage}${formatTime(uploadMs)}\n`
 	);
+	console.timeEnd("ASSETS_UPLOAD")
 
 	return completionJwt;
 };

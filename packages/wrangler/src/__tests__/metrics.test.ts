@@ -174,7 +174,10 @@ describe("metrics", () => {
 		});
 
 		describe("sendNewEvent()", () => {
+			let originalDefinitions: [string, DefinitionTreeNode][];
+
 			beforeAll(() => {
+				originalDefinitions = [...DefinitionTreeRoot.subtree.entries()];
 				// register a no-op test command
 				defineNamespace({
 					command: "wrangler command",
@@ -222,6 +225,10 @@ describe("metrics", () => {
 						}
 					},
 				});
+			});
+			afterAll(() => {
+				// clean up the command definitions
+				DefinitionTreeRoot.subtree = new Map(originalDefinitions);
 			});
 			it("should send a started and completed event", async () => {
 				const requests = mockMetricRequest({}, {});

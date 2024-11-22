@@ -35,7 +35,7 @@ export function getMetricsDispatcher(options: MetricsConfigOptions) {
 	/** We redact strings in arg values, unless they are named here */
 	const allowList = {
 		// applies to all commands
-		"*": ["format", "log-level"],
+		"*": ["format", "log-level", "logLevel"],
 		// specific commands
 		tail: ["status"],
 	};
@@ -155,7 +155,14 @@ export function getMetricsDispatcher(options: MetricsConfigOptions) {
 			keepalive: true,
 			body: JSON.stringify(body),
 		})
-			.then(() => {})
+			.then((res) => {
+				if (!res.ok) {
+					logger.debug(
+						"Metrics dispatcher: Failed to send request:",
+						res.statusText
+					);
+				}
+			})
 			.catch((e) => {
 				logger.debug(
 					"Metrics dispatcher: Failed to send request:",

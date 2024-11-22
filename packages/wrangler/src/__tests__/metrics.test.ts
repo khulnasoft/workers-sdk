@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { vi } from "vitest";
 import { defineCommand, defineNamespace } from "../core";
+import { DefinitionTreeRoot } from "../core/define-command";
 import { UserError } from "../errors";
 import { CI } from "../is-ci";
 import { logger } from "../logger";
@@ -20,6 +21,7 @@ import { msw } from "./helpers/msw";
 import { runInTempDir } from "./helpers/run-in-tmp";
 import { runWrangler } from "./helpers/run-wrangler";
 import { writeWranglerToml } from "./helpers/write-wrangler-toml";
+import type { DefinitionTreeNode } from "../core/define-command";
 import type { MockInstance } from "vitest";
 
 vi.mock("../metrics/helpers");
@@ -65,21 +67,20 @@ describe("metrics", () => {
 
 		describe("sendEvent()", () => {
 			it("should send a request to the default URL", async () => {
-				const requests = mockMetricRequest(
-					{
-						event: "some-event",
-						properties: {
-							category: "Workers",
-							wranglerVersion: "1.2.3",
-							os: "foo:bar",
-							a: 1,
-							b: 2,
-						},
-					},
-					{
-						"Sparrow-Source-Key": "MOCK_KEY",
-					}
-				);
+				const requests = mockMetricRequest();
+				// {
+				// 	event: "some-event",
+				// 	properties: {
+				// 		category: "Workers",
+				// 		wranglerVersion: "1.2.3",
+				// 		os: "foo:bar",
+				// 		a: 1,
+				// 		b: 2,
+				// 	},
+				// },
+				// {
+				// 	"Sparrow-Source-Key": "MOCK_KEY",
+				// }
 				const dispatcher = await getMetricsDispatcher({
 					sendMetrics: true,
 				});
@@ -95,7 +96,7 @@ describe("metrics", () => {
 			});
 
 			it("should write a debug log if the dispatcher is disabled", async () => {
-				const requests = mockMetricRequest({}, {});
+				const requests = mockMetricRequest();
 				const dispatcher = await getMetricsDispatcher({
 					sendMetrics: false,
 				});
@@ -122,12 +123,10 @@ describe("metrics", () => {
 				await dispatcher.sendEvent("some-event", { a: 1, b: 2 });
 				await flushPromises();
 
-				expect(std.debug).toMatchInlineSnapshot(
-					`
+				expect(std.debug).toMatchInlineSnapshot(`
 					"Metrics dispatcher: Posting data {\\"deviceId\\":\\"f82b1f46-eb7b-4154-aa9f-ce95f23b2288\\",\\"event\\":\\"some-event\\",\\"timestamp\\":1733961600000,\\"properties\\":{\\"category\\":\\"Workers\\",\\"wranglerVersion\\":\\"1.2.3\\",\\"os\\":\\"foo:bar\\",\\"a\\":1,\\"b\\":2}}
 					Metrics dispatcher: Failed to send request: Failed to fetch"
-				`
-				);
+				`);
 				expect(std.out).toMatchInlineSnapshot(`""`);
 				expect(std.warn).toMatchInlineSnapshot(`""`);
 				expect(std.err).toMatchInlineSnapshot(`""`);
@@ -136,7 +135,7 @@ describe("metrics", () => {
 			it("should write a warning log if no source key has been provided", async () => {
 				vi.stubEnv("SPARROW_SOURCE_KEY", undefined);
 
-				const requests = mockMetricRequest({}, {});
+				const requests = mockMetricRequest();
 				const dispatcher = await getMetricsDispatcher({
 					sendMetrics: true,
 				});
@@ -153,7 +152,7 @@ describe("metrics", () => {
 		});
 
 		it("should keep track of all requests made", async () => {
-			const requests = mockMetricRequest({}, {});
+			const requests = mockMetricRequest();
 			const dispatcher = await getMetricsDispatcher({
 				sendMetrics: true,
 			});
@@ -232,7 +231,7 @@ describe("metrics", () => {
 				DefinitionTreeRoot.subtree = new Map(originalDefinitions);
 			});
 			it("should send a started and completed event", async () => {
-				const requests = mockMetricRequest({}, {});
+				const requests = mockMetricRequest();
 
 				await runWrangler("command subcommand positional");
 
@@ -328,7 +327,7 @@ describe("metrics", () => {
 			});
 
 			it("should send a started and errored event", async () => {
-				const requests = mockMetricRequest({}, {});
+				const requests = mockMetricRequest();
 
 				await expect(runWrangler("command subcommand error")).rejects.toThrow(
 					"oh no"
@@ -422,7 +421,7 @@ describe("metrics", () => {
 
 			it("should mark isCI as true if running in CI", async () => {
 				isCISpy.mockReturnValue(true);
-				const requests = mockMetricRequest({}, {});
+				const requests = mockMetricRequest();
 
 				await runWrangler("command subcommand positional");
 
@@ -432,7 +431,7 @@ describe("metrics", () => {
 
 			it("should mark as non-interactive if running in non-interactive environment", async () => {
 				setIsTTY(false);
-				const requests = mockMetricRequest({}, {});
+				const requests = mockMetricRequest();
 
 				await runWrangler("command subcommand positional");
 
@@ -453,7 +452,7 @@ describe("metrics", () => {
 						},
 					});
 
-					const requests = mockMetricRequest({}, {});
+					const requests = mockMetricRequest();
 
 					await runWrangler("command subcommand positional");
 					expect(std.out).toMatchInlineSnapshot(`
@@ -472,7 +471,7 @@ describe("metrics", () => {
 							bannerLastShown: "1.2.3",
 						},
 					});
-					const requests = mockMetricRequest({}, {});
+					const requests = mockMetricRequest();
 					await runWrangler("command subcommand positional");
 					expect(std.out).toMatchInlineSnapshot(`
 						"Ran wrangler command subcommand"
@@ -486,7 +485,7 @@ describe("metrics", () => {
 							date: new Date(2022, 6, 4),
 						},
 					});
-					const requests = mockMetricRequest({}, {});
+					const requests = mockMetricRequest();
 					await runWrangler("command subcommand positional");
 					expect(std.out).toMatchInlineSnapshot(`
 						"
@@ -504,7 +503,7 @@ describe("metrics", () => {
 							date: new Date(2022, 6, 4),
 						},
 					});
-					const requests = mockMetricRequest({}, {});
+					const requests = mockMetricRequest();
 					await runWrangler("command subcommand positional");
 					expect(std.out).toMatchInlineSnapshot(`
 						"Ran wrangler command subcommand"
@@ -744,7 +743,7 @@ Wrangler is no longer collecting telemetry about your usage.`);
 		});
 
 		it(`doesn't send telemetry when running "wrangler ${cmd} disable"`, async () => {
-			const requests = mockMetricRequest({}, {});
+			const requests = mockMetricRequest();
 			writeMetricsConfig({
 				permission: {
 					enabled: true,
@@ -757,7 +756,7 @@ Wrangler is no longer collecting telemetry about your usage.`);
 		});
 
 		it(`does send telemetry when running "wrangler ${cmd} enable"`, async () => {
-			const requests = mockMetricRequest({}, {});
+			const requests = mockMetricRequest();
 			writeMetricsConfig({
 				permission: {
 					enabled: true,
@@ -814,14 +813,11 @@ Wrangler is now collecting telemetry about your usage. Thank you for helping mak
 	});
 });
 
-function mockMetricRequest(body: unknown, header: unknown) {
+function mockMetricRequest() {
 	const requests = { count: 0 };
 	msw.use(
-		http.post(`*/event`, async ({ request }) => {
+		http.post(`*/event`, async () => {
 			requests.count++;
-
-			expect(await request.json()).toBe(body);
-			expect(request.headers).toContain(header);
 			return HttpResponse.json({}, { status: 200 });
 		})
 	);

@@ -319,7 +319,7 @@ describe("metrics", () => {
 				);
 				expect(std.out).toMatchInlineSnapshot(`
 					"
-					Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/telemetry.md
+					Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
 					Ran wrangler command subcommand"
 				`);
 				expect(std.warn).toMatchInlineSnapshot(`""`);
@@ -457,7 +457,7 @@ describe("metrics", () => {
 					await runWrangler("command subcommand positional");
 					expect(std.out).toMatchInlineSnapshot(`
 						"
-						Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/telemetry.md
+						Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
 						Ran wrangler command subcommand"
 					`);
 
@@ -489,7 +489,7 @@ describe("metrics", () => {
 					await runWrangler("command subcommand positional");
 					expect(std.out).toMatchInlineSnapshot(`
 						"
-						Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/telemetry.md
+						Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
 						Ran wrangler command subcommand"
 					`);
 					expect(requests.count).toBe(2);

@@ -3,7 +3,6 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { getWranglerSendMetricsFromEnv } from "../environment-variables/misc-variables";
 import { getGlobalWranglerConfigPath } from "../global-wrangler-config-path";
-import { isNonInteractiveOrCI } from "../is-interactive";
 import { logger } from "../logger";
 
 /**
@@ -84,12 +83,6 @@ export function getMetricsConfig({
 				"Usage metrics tracking has changed since you last granted permission."
 			);
 		}
-	}
-
-	// We couldn't get the metrics permission from the project-level nor the user-level config.
-	// If we are not interactive or in a CI build then just bail out.
-	if (isNonInteractiveOrCI()) {
-		return { enabled: false, deviceId };
 	}
 
 	// Otherwise, default to true

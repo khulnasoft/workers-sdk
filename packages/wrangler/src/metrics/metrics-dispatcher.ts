@@ -1,6 +1,8 @@
 import chalk from "chalk";
 import { fetch } from "undici";
+import _isInteractive from "../is-interactive";
 import { logger } from "../logger";
+import { CI } from "./../is-ci";
 import {
 	getOS,
 	getPackageManager,
@@ -26,8 +28,17 @@ export function getMetricsDispatcher(options: MetricsConfigOptions) {
 	const platform = getPlatform();
 	const packageManager = getPackageManager();
 	const isFirstUsage = readMetricsConfig().permission === undefined;
+	const isCI = CI.isCI();
+	const isInteractive = _isInteractive();
 	const amplitude_session_id = Date.now();
 	let amplitude_event_id = 0;
+	/** We redact strings in arg values, unless they are named here */
+	const allowList = {
+		// applies to all commands
+		"*": ["format", "log-level"],
+		// specific commands
+		tail: ["status"],
+	};
 
 	return {
 		/**
@@ -69,6 +80,8 @@ export function getMetricsDispatcher(options: MetricsConfigOptions) {
 				return;
 			}
 			printMetricsBanner();
+			const argsUsed = normaliseArgs(properties.args ?? {});
+			const argsCombination = argsUsed.sort().join(", ");
 			const commonEventProperties: CommonEventProperties = {
 				amplitude_session_id,
 				amplitude_event_id: amplitude_event_id++,
@@ -76,8 +89,14 @@ export function getMetricsDispatcher(options: MetricsConfigOptions) {
 				platform,
 				packageManager,
 				isFirstUsage,
+				isCI,
+				isInteractive,
+				argsUsed,
+				argsCombination,
 			};
-
+			// we redact all args unless they are in the allowList
+			const allowedKeys = getAllowedKeys(allowList, properties.command ?? "");
+			properties.args = redactArgValues(properties.args ?? {}, allowedKeys);
 			await dispatch({
 				name,
 				properties: {
@@ -165,3 +184,66 @@ export function getMetricsDispatcher(options: MetricsConfigOptions) {
 }
 
 export type Properties = Record<string, unknown>;
+
+const exclude = new Set(["$0", "_"]);
+/** just some pretty naive cleaning so we don't send "experimental-versions", "experimentalVersions", "x-versions" and "xVersions" etc. */
+const normaliseArgs = (argsWithValues: Record<string, unknown>) => {
+	const result: string[] = [];
+	const args = Object.keys(argsWithValues);
+	for (const arg of args) {
+		if (exclude.has(arg)) {
+			continue;
+		}
+		if (
+			typeof argsWithValues[arg] === "boolean" &&
+			argsWithValues[arg] === false
+		) {
+			continue;
+		}
+		const normalisedArg = arg
+			.replace("experimental", "x")
+			.replaceAll("-", "")
+			.toLowerCase();
+		if (result.includes(normalisedArg)) {
+			continue;
+		}
+		result.push(normalisedArg);
+	}
+	return result;
+};
+
+const getAllowedKeys = (
+	allowList: Record<string, string[]> & { "*": string[] },
+	key: string
+) => {
+	const commandSpecific = allowList[key] ?? [];
+	return [...commandSpecific, ...allowList["*"]];
+};
+export const redactArgValues = (
+	args: Record<string, unknown>,
+	allowedKeys: string[]
+) => {
+	const result: Record<string, unknown> = {};
+
+	for (const [key, value] of Object.entries(args)) {
+		if (exclude.has(key)) {
+			continue;
+		}
+		if (
+			typeof value === "number" ||
+			typeof value === "boolean" ||
+			allowedKeys.includes(key)
+		) {
+			result[key] = value;
+		} else if (typeof value === "string") {
+			result[key] = "<REDACTED>";
+		} else if (Array.isArray(value)) {
+			result[key] = value.map((v) =>
+				typeof v === "string" ? "<REDACTED>" : v
+			);
+		} else {
+			result[key] = value;
+		}
+	}
+	return result;
+};

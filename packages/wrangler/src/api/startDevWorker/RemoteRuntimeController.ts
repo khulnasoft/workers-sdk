@@ -64,6 +64,7 @@ export class RemoteRuntimeController extends RuntimeController {
 			Parameters<typeof getWorkerAccountAndContext>[0]
 	): Promise<CfPreviewToken | undefined> {
 		try {
+			console.time("REMOTE_createWorkerInit");
 			const init = await createRemoteWorkerInit({
 				bundle: props.bundle,
 				modules: props.modules,
@@ -79,6 +80,7 @@ export class RemoteRuntimeController extends RuntimeController {
 				compatibilityDate: props.compatibilityDate,
 				compatibilityFlags: props.compatibilityFlags,
 			});
+			console.timeEnd("REMOTE_createWorkerInit");
 
 			const { workerAccount, workerContext } = await getWorkerAccountAndContext(
 				{
@@ -94,6 +96,7 @@ export class RemoteRuntimeController extends RuntimeController {
 				return;
 			}
 
+			console.time("REMOTE_createWorkerPreview");
 			const workerPreviewToken = await createWorkerPreview(
 				init,
 				workerAccount,
@@ -101,6 +104,10 @@ export class RemoteRuntimeController extends RuntimeController {
 				this.#session,
 				this.#abortController.signal
 			);
+			console.timeEnd("REMOTE_createWorkerPreview");
+			setTimeout(() => {
+				console.log("hey");
+			}, 3000);
 
 			return workerPreviewToken;
 		} catch (err: unknown) {
@@ -121,6 +128,7 @@ export class RemoteRuntimeController extends RuntimeController {
 
 	async #onBundleComplete({ config, bundle }: BundleCompleteEvent, id: number) {
 		logger.log(chalk.dim("⎔ Starting remote preview..."));
+		console.time("REMOTE_startPreview");
 
 		try {
 			const routes = config.triggers
@@ -151,6 +159,7 @@ export class RemoteRuntimeController extends RuntimeController {
 				logger.log(chalk.dim("⎔ Detected changes, restarted server."));
 			}
 
+			console.time("REMOTE_previewSession");
 			this.#session ??= await this.#previewSession({
 				accountId: auth.accountId,
 				env: config.env, // deprecated service environments -- just pass it through for now
@@ -159,11 +168,13 @@ export class RemoteRuntimeController extends RuntimeController {
 				routes,
 				sendMetrics: config.sendMetrics,
 			});
+			console.timeEnd("REMOTE_previewSession");
 
 			const bindings = (
 				await convertBindingsToCfWorkerInitBindings(config.bindings)
 			).bindings;
 
+			console.time("REMOTE_previewToken");
 			const token = await this.#previewToken({
 				bundle,
 				modules: bundle.modules,
@@ -190,6 +201,7 @@ export class RemoteRuntimeController extends RuntimeController {
 				host: config.dev.origin?.hostname,
 				sendMetrics: config.sendMetrics,
 			});
+			console.timeEnd("REMOTE_previewToken");
 
 			// If we received a new `bundleComplete` event before we were able to
 			// dispatch a `reloadComplete` for this bundle, ignore this bundle.
@@ -241,6 +253,7 @@ export class RemoteRuntimeController extends RuntimeController {
 				data: undefined,
 			});
 		}
+		console.timeEnd("REMOTE_startPreview");
 	}
 
 	// ******************

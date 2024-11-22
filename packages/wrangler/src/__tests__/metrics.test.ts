@@ -219,6 +219,7 @@ describe("metrics", () => {
 					},
 					positionalArgs: ["positional"],
 					handler(args, ctx) {
+						vi.advanceTimersByTime(6000);
 						ctx.logger.log("Ran wrangler command subcommand");
 						if (args.positional === "error") {
 							throw new UserError("oh no");
@@ -278,7 +279,7 @@ describe("metrics", () => {
 				const expectedCompleteReq = {
 					deviceId: "f82b1f46-eb7b-4154-aa9f-ce95f23b2288",
 					event: "wrangler command completed",
-					timestamp: 1733961600000,
+					timestamp: 1733961606000,
 					properties: {
 						amplitude_session_id: 1733961600000,
 						amplitude_event_id: 1,
@@ -308,9 +309,9 @@ describe("metrics", () => {
 							number: 42,
 							positional: "<REDACTED>",
 						},
-						durationMs: 0,
-						durationSeconds: 0,
-						durationMinutes: 0,
+						durationMs: 6000,
+						durationSeconds: 6,
+						durationMinutes: 0.1,
 					},
 				};
 				// command completed
@@ -377,7 +378,7 @@ describe("metrics", () => {
 				const expectedErrorReq = {
 					deviceId: "f82b1f46-eb7b-4154-aa9f-ce95f23b2288",
 					event: "wrangler command errored",
-					timestamp: 1733961600000,
+					timestamp: 1733961606000,
 					properties: {
 						amplitude_session_id: 1733961600000,
 						amplitude_event_id: 1,
@@ -407,9 +408,9 @@ describe("metrics", () => {
 							number: 42,
 							positional: "<REDACTED>",
 						},
-						durationMs: 0,
-						durationSeconds: 0,
-						durationMinutes: 0,
+						durationMs: 6000,
+						durationSeconds: 6,
+						durationMinutes: 0.1,
 						errorType: "UserError",
 					},
 				};
